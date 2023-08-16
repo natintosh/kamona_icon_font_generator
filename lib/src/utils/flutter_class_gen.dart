@@ -138,7 +138,7 @@ class FlutterClassGenerator {
         '///',
         "/// <image width='32px' src='data:image/svg+xml;base64,${glyphMeta.preview}'>",
       ],
-      'static const IconData $varName = IconData(0x$hexCode, $posParamString);'
+      'static const $varName = IconData(0x$hexCode, $posParamString);'
     ];
   }
 
@@ -151,7 +151,7 @@ class FlutterClassGenerator {
             glyphList[i].metadata.name!,
             _namingStrategy,
           );
-          return "'$iconName': $iconName,";
+          return "$_indent'$iconName': $iconName,";
         }.call(),
       '};'
     ];
