@@ -145,14 +145,7 @@ class FlutterClassGenerator {
   List<String> _generateAllIconsMap() {
     return [
       'static const all = {',
-      for (var i = 0; i < glyphList.length; i++)
-        () {
-          final iconName = _fixNamingStrategy(
-            glyphList[i].metadata.name!,
-            _namingStrategy,
-          );
-          return "$_indent'$iconName': $iconName,";
-        }.call(),
+      for (final iconName in _iconVarNames) "$_indent'$iconName': $iconName,",
       '};'
     ];
   }
