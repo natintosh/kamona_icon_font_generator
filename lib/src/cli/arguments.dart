@@ -24,6 +24,7 @@ const _kArgAllowedTypes = <CliArgument, List<Type>>{
   CliArgument.ignoreShapes: [bool],
   CliArgument.recursive: [bool],
   CliArgument.format: [bool],
+  CliArgument.namingStrategy: [String],
   CliArgument.verbose: [bool],
   CliArgument.help: [bool],
   CliArgument.configFile: [String],
