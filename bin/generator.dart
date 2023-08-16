@@ -77,9 +77,14 @@ void _run(CliArguments parsedArgs) {
         "The input directory doesn't contain any SVG file (${parsedArgs.svgDir.path}).");
   }
 
+  String iconNameFromPath(String path) {
+    return p.basenameWithoutExtension(
+        path.replaceFirst(parsedArgs.svgDir.path, '').replaceAll('/', '_'));
+  }
+
   final svgMap = {
     for (final f in svgFileList)
-      p.basenameWithoutExtension(f.path): File(f.path).readAsStringSync(),
+      iconNameFromPath(f.path): File(f.path).readAsStringSync(),
   };
 
   final otfResult = svgToOtf(
