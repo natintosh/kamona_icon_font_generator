@@ -142,6 +142,21 @@ class FlutterClassGenerator {
     ];
   }
 
+  List<String> _generateAllIconsMap() {
+    return [
+      'static const all = {',
+      for (var i = 0; i < glyphList.length; i++)
+        () {
+          final iconName = _fixNamingStrategy(
+            glyphList[i].metadata.name!,
+            _namingStrategy,
+          );
+          return "'$iconName': $iconName,";
+        }.call(),
+      '};'
+    ];
+  }
+
   /// Generates content for a class' file.
   String generate() {
     final classContent = [
@@ -150,6 +165,8 @@ class FlutterClassGenerator {
       _fontFamilyConst,
       if (_hasPackage) _fontPackageConst,
       for (var i = 0; i < glyphList.length; i++) ..._generateIconConst(i),
+      '',
+      ..._generateAllIconsMap(),
     ];
 
     final classContentString =
