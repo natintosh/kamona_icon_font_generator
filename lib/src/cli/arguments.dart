@@ -5,6 +5,7 @@ import 'package:args/args.dart';
 import 'package:collection/collection.dart';
 import 'package:yaml/yaml.dart';
 
+import '../common/naming_strategy.dart';
 import '../utils/enum_class.dart';
 import '../utils/logger.dart';
 import 'formatter.dart';
@@ -39,6 +40,7 @@ const kOptionNames = EnumClass<CliArgument, String>({
   CliArgument.className: 'class-name',
   CliArgument.fontPackage: 'package',
   CliArgument.format: 'format',
+  CliArgument.namingStrategy: 'naming-strategy',
 
   CliArgument.fontName: 'font-name',
   CliArgument.normalize: 'normalize',
@@ -59,6 +61,7 @@ const kConfigKeys = EnumClass<CliArgument, String>({
   CliArgument.className: 'class_name',
   CliArgument.fontPackage: 'package',
   CliArgument.format: 'format',
+  CliArgument.namingStrategy: 'naming_strategy',
 
   CliArgument.fontName: 'font_name',
   CliArgument.normalize: 'normalize',
@@ -85,6 +88,7 @@ enum CliArgument {
   className,
   fontPackage,
   format,
+  namingStrategy,
 
   // Font-related
   fontName,
@@ -109,6 +113,7 @@ class CliArguments {
     this.className,
     this.fontPackage,
     this.format,
+    this.namingStrategy,
     this.fontName,
     this.recursive,
     this.ignoreShapes,
@@ -131,6 +136,7 @@ class CliArguments {
       map[CliArgument.className] as String?,
       map[CliArgument.fontPackage] as String?,
       map[CliArgument.format] as bool?,
+      NamingStrategy.fromString(map[CliArgument.namingStrategy] as String?),
       map[CliArgument.fontName] as String?,
       map[CliArgument.recursive] as bool?,
       map[CliArgument.ignoreShapes] as bool?,
@@ -146,6 +152,7 @@ class CliArguments {
   final String? className;
   final String? fontPackage;
   final bool? format;
+  final NamingStrategy? namingStrategy;
   final String? fontName;
   final bool? recursive;
   final bool? ignoreShapes;

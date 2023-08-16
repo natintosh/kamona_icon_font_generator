@@ -3,6 +3,7 @@ import '../svg.dart';
 import '../utils/flutter_class_gen.dart';
 import '../utils/logger.dart';
 import 'generic_glyph.dart';
+import 'naming_strategy.dart';
 
 /// Result of svg-to-otf conversion.
 ///
@@ -81,15 +82,17 @@ String generateFlutterClass({
   String? className,
   String? familyName,
   String? fontFileName,
-  String? package,
+  NamingStrategy? namingStrategy,
   int? indent,
+  String? package,
 }) {
   final generator = FlutterClassGenerator(
     glyphList,
     className: className,
-    indent: indent,
-    fontFileName: fontFileName,
     familyName: familyName,
+    fontFileName: fontFileName,
+    indent: indent,
+    namingStrategy: namingStrategy,
     package: package,
   );
 

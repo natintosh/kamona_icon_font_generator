@@ -100,8 +100,9 @@ void _run(CliArguments parsedArgs) {
     var classString = generateFlutterClass(
       glyphList: otfResult.glyphList,
       className: parsedArgs.className,
-      fontFileName: fontFileName,
       familyName: otfResult.font.familyName,
+      fontFileName: fontFileName,
+      namingStrategy: parsedArgs.namingStrategy,
       package: parsedArgs.fontPackage,
     );
 

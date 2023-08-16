@@ -1,14 +1,15 @@
-import 'package:path/path.dart' as p;
 import 'package:recase/recase.dart';
 
 import '../common/constant.dart';
 import '../common/generic_glyph.dart';
+import '../common/naming_strategy.dart';
 import '../otf/defaults.dart';
 
 const _kUnnamedIconName = 'unnamed';
 const _kDefaultIndent = 2;
 const _kDefaultClassName = 'UiIcons';
 const _kDefaultFontFileName = 'icon_font_generator_icons.otf';
+const _kDefaultNamingStrategy = NamingStrategy.camel;
 
 /// Removes any characters that are not valid for variable name.
 ///
@@ -16,6 +17,15 @@ const _kDefaultFontFileName = 'icon_font_generator_icons.otf';
 String _getVarName(String string) {
   final replaced = string.replaceAll(RegExp(r'[^a-zA-Z0-9_\-$]'), '');
   return RegExp(r'^[a-zA-Z$].*').firstMatch(replaced)?.group(0) ?? '';
+}
+
+String _fixNamingStrategy(String string, NamingStrategy namingStrategy) {
+  switch (namingStrategy) {
+    case NamingStrategy.camel:
+      return string.camelCase;
+    case NamingStrategy.snake:
+      return string.snakeCase;
+  }
 }
 
 /// A helper for generating Flutter-compatible class with IconData objects for each icon.
@@ -31,29 +41,38 @@ class FlutterClassGenerator {
     String? className,
     String? familyName,
     String? fontFileName,
-    String? package,
     int? indent,
-  })  : _indent = ' ' * (indent ?? _kDefaultIndent),
-        _className = _getVarName(className ?? _kDefaultClassName),
+    NamingStrategy? namingStrategy,
+    String? package,
+  })  : _className = _getVarName(className ?? _kDefaultClassName),
         _familyName = familyName ?? kDefaultFontFamily,
         _fontFileName = fontFileName ?? _kDefaultFontFileName,
-        _iconVarNames = _generateVariableNames(glyphList),
-        _package = package?.isEmpty ?? true ? null : package;
+        _indent = ' ' * (indent ?? _kDefaultIndent),
+        _package = package?.isEmpty ?? true ? null : package,
+        _iconVarNames = _generateVariableNames(
+          glyphList,
+          namingStrategy ?? _kDefaultNamingStrategy,
+        );
 
   final List<GenericGlyph> glyphList;
-  final String _fontFileName;
   final String _className;
   final String _familyName;
+  final String _fontFileName;
   final String _indent;
   final String? _package;
   final List<String> _iconVarNames;
 
-  static List<String> _generateVariableNames(List<GenericGlyph> glyphList) {
+  static List<String> _generateVariableNames(
+    List<GenericGlyph> glyphList,
+    NamingStrategy namingStrategy,
+  ) {
     final iconNameSet = <String>{};
 
     return glyphList.map((g) {
-      final baseName =
-          _getVarName(p.basenameWithoutExtension(g.metadata.name!)).camelCase;
+      final baseName = _fixNamingStrategy(
+        _getVarName(g.metadata.name!),
+        namingStrategy,
+      );
       final usingDefaultName = baseName.isEmpty;
 
       var variableName = usingDefaultName ? _kUnnamedIconName : baseName;

@@ -30,6 +30,11 @@ void defineOptions(ArgParser argParser) {
       help: 'Formate dart generated code.',
       defaultsTo: kDefaultFormat,
     )
+    ..addOption(
+      kOptionNames[CliArgument.namingStrategy]!,
+      help: 'Icons name strategy: camel (yaruIcon) or snake (yaru_icon)',
+      valueHelp: 'camel',
+    )
     ..addSeparator('Font options:')
     ..addOption(
       kOptionNames[CliArgument.fontName]!,
