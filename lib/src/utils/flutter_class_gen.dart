@@ -48,6 +48,7 @@ class FlutterClassGenerator {
         _familyName = familyName ?? kDefaultFontFamily,
         _fontFileName = fontFileName ?? _kDefaultFontFileName,
         _indent = ' ' * (indent ?? _kDefaultIndent),
+        _namingStrategy = namingStrategy ?? _kDefaultNamingStrategy,
         _package = package?.isEmpty ?? true ? null : package,
         _iconVarNames = _generateVariableNames(
           glyphList,
@@ -59,6 +60,7 @@ class FlutterClassGenerator {
   final String _familyName;
   final String _fontFileName;
   final String _indent;
+  final NamingStrategy _namingStrategy;
   final String? _package;
   final List<String> _iconVarNames;
 
@@ -117,7 +119,7 @@ class FlutterClassGenerator {
     final glyphMeta = glyphList[index].metadata;
 
     final charCode = glyphMeta.charCode!;
-    final iconName = glyphMeta.name!;
+    final iconName = _fixNamingStrategy(glyphMeta.name!, _namingStrategy);
 
     final varName = _iconVarNames[index];
     final hexCode = charCode.toRadixString(16);
