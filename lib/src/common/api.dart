@@ -83,6 +83,7 @@ String generateFlutterClass({
   String? familyName,
   String? fontFileName,
   NamingStrategy? namingStrategy,
+  Map<String, String>? symlinkMap,
   int? indent,
   String? package,
 }) {
@@ -93,6 +94,7 @@ String generateFlutterClass({
     fontFileName: fontFileName,
     indent: indent,
     namingStrategy: namingStrategy,
+    symlinkMap: symlinkMap,
     package: package,
   );
 

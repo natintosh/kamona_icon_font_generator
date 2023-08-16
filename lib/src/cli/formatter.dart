@@ -8,6 +8,7 @@ const _kArgumentFormatters = <CliArgument, CliArgumentFormatter>{
   CliArgument.svgDir: Directory.new,
   CliArgument.fontFile: File.new,
   CliArgument.classFile: File.new,
+  CliArgument.symlinkMapFile: File.new,
   CliArgument.configFile: File.new,
 };
 

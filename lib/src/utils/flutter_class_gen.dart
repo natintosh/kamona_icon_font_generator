@@ -1,3 +1,4 @@
+import 'package:icon_font_generator/src/utils/logger.dart';
 import 'package:recase/recase.dart';
 
 import '../common/constant.dart';
@@ -43,17 +44,15 @@ class FlutterClassGenerator {
     String? fontFileName,
     int? indent,
     NamingStrategy? namingStrategy,
+    Map<String, String>? symlinkMap,
     String? package,
   })  : _className = _getVarName(className ?? _kDefaultClassName),
         _familyName = familyName ?? kDefaultFontFamily,
         _fontFileName = fontFileName ?? _kDefaultFontFileName,
         _indent = ' ' * (indent ?? _kDefaultIndent),
         _namingStrategy = namingStrategy ?? _kDefaultNamingStrategy,
-        _package = package?.isEmpty ?? true ? null : package,
-        _iconVarNames = _generateVariableNames(
-          glyphList,
-          namingStrategy ?? _kDefaultNamingStrategy,
-        );
+        _symlinkMap = symlinkMap,
+        _package = package?.isEmpty ?? true ? null : package;
 
   final List<GenericGlyph> glyphList;
   final String _className;
@@ -61,26 +60,23 @@ class FlutterClassGenerator {
   final String _fontFileName;
   final String _indent;
   final NamingStrategy _namingStrategy;
+  final Map<String, String>? _symlinkMap;
   final String? _package;
-  final List<String> _iconVarNames;
 
-  static List<String> _generateVariableNames(
-    List<GenericGlyph> glyphList,
-    NamingStrategy namingStrategy,
-  ) {
-    final iconNameSet = <String>{};
+  Map<String, GenericGlyph> _generateIconMap() {
+    final iconMap = <String, GenericGlyph>{};
 
-    return glyphList.map((g) {
+    for (final glyph in glyphList) {
       final baseName = _fixNamingStrategy(
-        _getVarName(g.metadata.name!),
-        namingStrategy,
+        _getVarName(glyph.metadata.name!),
+        _namingStrategy,
       );
       final usingDefaultName = baseName.isEmpty;
 
       var variableName = usingDefaultName ? _kUnnamedIconName : baseName;
 
       // Handling same names by adding numeration to them
-      if (iconNameSet.contains(variableName)) {
+      if (iconMap.keys.contains(variableName)) {
         // If name already contains numeration, then splitting it
         final countMatch = RegExp(r'^(.*)_([0-9]+)$').firstMatch(variableName);
 
@@ -97,15 +93,48 @@ class FlutterClassGenerator {
         do {
           variableNameWithCount =
               '${variableWithoutCount}_${++variableNameCount}';
-        } while (iconNameSet.contains(variableNameWithCount));
+        } while (iconMap.keys.contains(variableNameWithCount));
 
         variableName = variableNameWithCount;
       }
 
-      iconNameSet.add(variableName);
+      iconMap.addAll({variableName: glyph});
+    }
 
-      return variableName;
-    }).toList();
+    return iconMap;
+  }
+
+  Map<String, GenericGlyph>? _generateGlyphSymlinks(
+    Map<String, GenericGlyph> iconMap,
+  ) {
+    if (_symlinkMap == null || _symlinkMap!.isEmpty) {
+      return null;
+    }
+
+    final glyphSymlinks = <String, GenericGlyph>{};
+
+    for (final symlinkEntry in _symlinkMap!.entries) {
+      final symlink = symlinkEntry.key;
+      final target = symlinkEntry.value;
+
+      if (iconMap.containsKey(symlink)) {
+        logger.w(
+          'Symlink "$symlink" icon already exists - symlink creation skipped',
+        );
+      } else if (_symlinkMap!.containsKey(target)) {
+        logger.w(
+          'Target "$target" icon is already a symlink - symlink creation skipped',
+        );
+      } else if (!iconMap.containsKey(target)) {
+        logger.w(
+          'Target "$target" icon does not exist - symlink creation skipped',
+        );
+      } else {
+        glyphSymlinks.addAll({symlink: iconMap[target]!});
+      }
+    }
+
+    return glyphSymlinks;
   }
 
   bool get _hasPackage => _package != null;
@@ -115,13 +144,11 @@ class FlutterClassGenerator {
 
   String get _fontPackageConst => "static const iconFontPackage = '$_package';";
 
-  List<String> _generateIconConst(int index) {
-    final glyphMeta = glyphList[index].metadata;
+  List<String> _generateIconConst(String varName, GenericGlyph glyph) {
+    final glyphMeta = glyph.metadata;
 
     final charCode = glyphMeta.charCode!;
-    final iconName = _fixNamingStrategy(glyphMeta.name!, _namingStrategy);
 
-    final varName = _iconVarNames[index];
     final hexCode = charCode.toRadixString(16);
 
     final posParamList = [
@@ -133,7 +160,7 @@ class FlutterClassGenerator {
 
     return [
       '',
-      '/// Font icon named "__${iconName}__"',
+      '/// Font icon named "__${varName.sentenceCase.toLowerCase()}__"',
       if (glyphMeta.preview != null) ...[
         '///',
         "/// <image width='32px' src='data:image/svg+xml;base64,${glyphMeta.preview}'>",
@@ -142,24 +169,40 @@ class FlutterClassGenerator {
     ];
   }
 
-  List<String> _generateAllIconsMap() {
+  List<String> _generateAllIconsMap(List<String> iconVarNames) {
     return [
       'static const all = {',
-      for (final iconName in _iconVarNames) "$_indent'$iconName': $iconName,",
+      for (final iconName in iconVarNames) "$_indent'$iconName': $iconName,",
       '};'
     ];
   }
 
   /// Generates content for a class' file.
   String generate() {
+    final iconMap = _generateIconMap();
+    final glyphSymlinks = _generateGlyphSymlinks(iconMap);
+
     final classContent = [
       'const $_className._();',
       '',
       _fontFamilyConst,
       if (_hasPackage) _fontPackageConst,
-      for (var i = 0; i < glyphList.length; i++) ..._generateIconConst(i),
+      for (final icon in iconMap.entries)
+        ..._generateIconConst(
+          icon.key,
+          icon.value,
+        ),
+      if (glyphSymlinks != null)
+        for (final symlink in glyphSymlinks.entries)
+          ..._generateIconConst(
+            symlink.key,
+            symlink.value,
+          ),
       '',
-      ..._generateAllIconsMap(),
+      ..._generateAllIconsMap([
+        ...iconMap.keys.toList(),
+        if (glyphSymlinks != null) ...glyphSymlinks.keys.toList(),
+      ]),
     ];
 
     final classContentString =

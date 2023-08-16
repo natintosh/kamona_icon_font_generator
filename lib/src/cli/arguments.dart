@@ -20,11 +20,12 @@ const _kArgAllowedTypes = <CliArgument, List<Type>>{
   CliArgument.className: [String],
   CliArgument.fontPackage: [String],
   CliArgument.fontName: [String],
+  CliArgument.namingStrategy: [String],
+  CliArgument.symlinkMapFile: [String],
   CliArgument.normalize: [bool],
   CliArgument.ignoreShapes: [bool],
   CliArgument.recursive: [bool],
   CliArgument.format: [bool],
-  CliArgument.namingStrategy: [String],
   CliArgument.verbose: [bool],
   CliArgument.help: [bool],
   CliArgument.configFile: [String],
@@ -42,6 +43,7 @@ const kOptionNames = EnumClass<CliArgument, String>({
   CliArgument.fontPackage: 'package',
   CliArgument.format: 'format',
   CliArgument.namingStrategy: 'naming-strategy',
+  CliArgument.symlinkMapFile: 'symlink-map-file',
 
   CliArgument.fontName: 'font-name',
   CliArgument.normalize: 'normalize',
@@ -63,6 +65,7 @@ const kConfigKeys = EnumClass<CliArgument, String>({
   CliArgument.fontPackage: 'package',
   CliArgument.format: 'format',
   CliArgument.namingStrategy: 'naming_strategy',
+  CliArgument.symlinkMapFile: 'symlink_map_file',
 
   CliArgument.fontName: 'font_name',
   CliArgument.normalize: 'normalize',
@@ -90,6 +93,7 @@ enum CliArgument {
   fontPackage,
   format,
   namingStrategy,
+  symlinkMapFile,
 
   // Font-related
   fontName,
@@ -115,6 +119,7 @@ class CliArguments {
     this.fontPackage,
     this.format,
     this.namingStrategy,
+    this.symlinkMapFile,
     this.fontName,
     this.recursive,
     this.ignoreShapes,
@@ -138,6 +143,7 @@ class CliArguments {
       map[CliArgument.fontPackage] as String?,
       map[CliArgument.format] as bool?,
       NamingStrategy.fromString(map[CliArgument.namingStrategy] as String?),
+      map[CliArgument.symlinkMapFile] as File?,
       map[CliArgument.fontName] as String?,
       map[CliArgument.recursive] as bool?,
       map[CliArgument.ignoreShapes] as bool?,
@@ -154,6 +160,7 @@ class CliArguments {
   final String? fontPackage;
   final bool? format;
   final NamingStrategy? namingStrategy;
+  final File? symlinkMapFile;
   final String? fontName;
   final bool? recursive;
   final bool? ignoreShapes;
@@ -302,6 +309,7 @@ extension CliArgumentMapExtension on Map<CliArgument, Object?> {
 
     final svgDir = args[CliArgument.svgDir] as Directory?;
     final fontFile = args[CliArgument.fontFile] as File?;
+    final symlinkMapFile = args[CliArgument.symlinkMapFile] as File?;
 
     if (svgDir == null) {
       throw CliArgumentException('The input directory is not specified.');
@@ -314,6 +322,11 @@ extension CliArgumentMapExtension on Map<CliArgument, Object?> {
     if (svgDir.statSync().type != FileSystemEntityType.directory) {
       throw CliArgumentException(
           "The input directory is not a directory or it doesn't exist.");
+    }
+
+    if (symlinkMapFile != null && !symlinkMapFile.path.endsWith('.json')) {
+      throw CliArgumentException(
+          'The symlink map file have to be a .json file.');
     }
   }
 

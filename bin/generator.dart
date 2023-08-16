@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
@@ -77,6 +78,19 @@ void _run(CliArguments parsedArgs) {
         "The input directory doesn't contain any SVG file (${parsedArgs.svgDir.path}).");
   }
 
+  final symlinkMap = <String, String>{};
+  final symlinkMapFile = parsedArgs.symlinkMapFile;
+  if (symlinkMapFile != null) {
+    final json =
+        jsonDecode(symlinkMapFile.readAsStringSync()) as Map<String, dynamic>;
+
+    for (final jsonItem in json.entries) {
+      symlinkMap.addAll({
+        jsonItem.key: jsonItem.value as String,
+      });
+    }
+  }
+
   String iconNameFromPath(String path) {
     return p.basenameWithoutExtension(
         path.replaceFirst(parsedArgs.svgDir.path, '').replaceAll('/', '_'));
@@ -108,6 +122,7 @@ void _run(CliArguments parsedArgs) {
       familyName: otfResult.font.familyName,
       fontFileName: fontFileName,
       namingStrategy: parsedArgs.namingStrategy,
+      symlinkMap: symlinkMap,
       package: parsedArgs.fontPackage,
     );
 

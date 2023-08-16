@@ -32,8 +32,13 @@ void defineOptions(ArgParser argParser) {
     )
     ..addOption(
       kOptionNames[CliArgument.namingStrategy]!,
-      help: 'Icons name strategy: camel (yaruIcon) or snake (yaru_icon)',
+      help: 'Icons name strategy: camel (yaruIcon) or snake (yaru_icon).',
       valueHelp: 'camel',
+    )
+    ..addOption(
+      kOptionNames[CliArgument.symlinkMapFile]!,
+      help: 'Symlinks json map, with this pattern: symlink -> target.',
+      valueHelp: 'path',
     )
     ..addSeparator('Font options:')
     ..addOption(
