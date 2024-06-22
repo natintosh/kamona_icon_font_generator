@@ -46,6 +46,7 @@ void _run(CliArguments parsedArgs) {
 
   final isRecursive = parsedArgs.recursive ?? kDefaultRecursive;
   final isVerbose = parsedArgs.verbose ?? kDefaultVerbose;
+  final canPrefixFolder = parsedArgs.prefixFolder ?? kDefaultPrefixFolder;
 
   if (isVerbose) {
     logger.setFilterLevel(Level.verbose);
@@ -98,7 +99,9 @@ void _run(CliArguments parsedArgs) {
 
   final svgMap = {
     for (final f in svgFileList)
-      iconNameFromPath(f.path): File(f.path).readAsStringSync(),
+      canPrefixFolder
+          ? iconNameFromPath(f.path)
+          : p.basenameWithoutExtension(f.path): File(f.path).readAsStringSync(),
   };
 
   final otfResult = svgToOtf(

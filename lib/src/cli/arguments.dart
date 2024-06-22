@@ -22,6 +22,7 @@ const _kArgAllowedTypes = <CliArgument, List<Type>>{
   CliArgument.fontName: [String],
   CliArgument.namingStrategy: [String],
   CliArgument.symlinkMapFile: [String],
+  CliArgument.prefixFolder: [bool],
   CliArgument.normalize: [bool],
   CliArgument.ignoreShapes: [bool],
   CliArgument.recursive: [bool],
@@ -34,6 +35,7 @@ const _kArgAllowedTypes = <CliArgument, List<Type>>{
 const kDefaultVerbose = false;
 const kDefaultFormat = false;
 const kDefaultRecursive = false;
+const kDefaultPrefixFolder = false;
 
 const kOptionNames = EnumClass<CliArgument, String>({
   // svgDir and fontFile are not options
@@ -44,6 +46,7 @@ const kOptionNames = EnumClass<CliArgument, String>({
   CliArgument.format: 'format',
   CliArgument.namingStrategy: 'naming-strategy',
   CliArgument.symlinkMapFile: 'symlink-map-file',
+  CliArgument.prefixFolder: 'prefix-folder',
 
   CliArgument.fontName: 'font-name',
   CliArgument.normalize: 'normalize',
@@ -66,6 +69,7 @@ const kConfigKeys = EnumClass<CliArgument, String>({
   CliArgument.format: 'format',
   CliArgument.namingStrategy: 'naming_strategy',
   CliArgument.symlinkMapFile: 'symlink_map_file',
+  CliArgument.prefixFolder: 'prefix_folder',
 
   CliArgument.fontName: 'font_name',
   CliArgument.normalize: 'normalize',
@@ -94,6 +98,7 @@ enum CliArgument {
   format,
   namingStrategy,
   symlinkMapFile,
+  prefixFolder,
 
   // Font-related
   fontName,
@@ -120,6 +125,7 @@ class CliArguments {
     this.format,
     this.namingStrategy,
     this.symlinkMapFile,
+    this.prefixFolder,
     this.fontName,
     this.recursive,
     this.ignoreShapes,
@@ -144,6 +150,7 @@ class CliArguments {
       map[CliArgument.format] as bool?,
       NamingStrategy.fromString(map[CliArgument.namingStrategy] as String?),
       map[CliArgument.symlinkMapFile] as File?,
+      map[CliArgument.prefixFolder] as bool?,
       map[CliArgument.fontName] as String?,
       map[CliArgument.recursive] as bool?,
       map[CliArgument.ignoreShapes] as bool?,
@@ -161,6 +168,7 @@ class CliArguments {
   final bool? format;
   final NamingStrategy? namingStrategy;
   final File? symlinkMapFile;
+  final bool? prefixFolder;
   final String? fontName;
   final bool? recursive;
   final bool? ignoreShapes;

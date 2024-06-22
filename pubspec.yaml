@@ -25,4 +25,4 @@ dev_dependencies:
   test: ^1.23.1
 
 executables:
-  yaru_icon_font_generator: generator
+  kamona_icon_font_generator: generator
