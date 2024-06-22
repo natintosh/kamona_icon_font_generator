@@ -32,13 +32,18 @@ void defineOptions(ArgParser argParser) {
     )
     ..addOption(
       kOptionNames[CliArgument.namingStrategy]!,
-      help: 'Icons name strategy: camel (yaruIcon) or snake (yaru_icon).',
+      help: 'Icons name strategy: camel (kamonaIcon) or snake (kamona_icon).',
       valueHelp: 'camel',
     )
     ..addOption(
       kOptionNames[CliArgument.symlinkMapFile]!,
       help: 'Symlinks json map, with this pattern: symlink -> target.',
       valueHelp: 'path',
+    )
+    ..addFlag(
+      kOptionNames[CliArgument.prefixFolder]!,
+      help: 'Prefix nested folder name with the icons name.',
+      defaultsTo: kDefaultPrefixFolder,
     )
     ..addSeparator('Font options:')
     ..addOption(
