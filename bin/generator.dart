@@ -170,6 +170,15 @@ void _run(CliArguments parsedArgs) {
       className: parsedArgs.className,
       subClasses: svgFileMap.keys.toList(),
     )}\n $classString';
+
+    if (parsedArgs.format ?? kDefaultFormat) {
+      try {
+        logger.t('Formatting Flutter class generation.');
+        classString = formatter.format(classString);
+      } on Object catch (e) {
+        logger.e(e.toString());
+      }
+    }
   }
 
   parsedArgs.classFile!.writeAsStringSync(classString);
