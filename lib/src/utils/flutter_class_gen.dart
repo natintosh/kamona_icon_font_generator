@@ -155,9 +155,9 @@ class FlutterClassGenerator {
   bool get _hasPackage => _package != null;
 
   String get _fontFamilyConst =>
-      "${nested ? 'String get' : 'static const'} iconFontFamily = '$_familyName';";
+      "${nested ? 'String get  iconFontFamily =>' : 'static const iconFontFamily ='} '$_familyName';";
 
-  String get _fontPackageConst => "${nested ? 'String get' : 'static const'} iconFontPackage = '$_package';";
+  String get _fontPackageConst => "${nested ? 'String get iconFontPackage =>' : 'static const iconFontPackage ='} '$_package';";
 
   List<String> _generateIconConst(String varName, GenericGlyph glyph) {
     final glyphMeta = glyph.metadata;
@@ -180,13 +180,13 @@ class FlutterClassGenerator {
         '///',
         "/// <image width='32px' src='data:image/svg+xml;base64,${glyphMeta.preview}'>",
       ],
-      '${nested ? 'IconData get' : 'static const'} $varName = IconData(0x$hexCode, $posParamString);'
+      '${nested ? 'IconData get $varName =>' : 'static const $varName ='} IconData(0x$hexCode, $posParamString);'
     ];
   }
 
   List<String> _generateAllIconsMap(List<String> iconVarNames) {
     return [
-      '${nested ? 'Map<String, IconData> get' : 'static const'} all = {',
+      '${nested ? 'Map<String, IconData> get all =>' : 'static const all ='} {',
       for (final iconName in iconVarNames) "$_indent'$iconName': $iconName,",
       '};'
     ];
