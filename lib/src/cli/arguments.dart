@@ -1,20 +1,19 @@
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:args/args.dart';
 import 'package:collection/collection.dart';
 import 'package:yaml/yaml.dart';
 
 import '../common/naming_strategy.dart';
+import '../common/source_directories.dart';
 import '../utils/enum_class.dart';
 import '../utils/logger.dart';
 import 'formatter.dart';
 
 const _kDefaultConfigPathList = ['pubspec.yaml', 'icon_font.yaml'];
-const _kPositionalArguments = [CliArgument.svgDir, CliArgument.fontFile];
 
 const _kArgAllowedTypes = <CliArgument, List<Type>>{
-  CliArgument.svgDir: [String],
+  CliArgument.svgDir: [List<String>],
   CliArgument.fontFile: [String],
   CliArgument.classFile: [String],
   CliArgument.className: [String],
@@ -22,7 +21,6 @@ const _kArgAllowedTypes = <CliArgument, List<Type>>{
   CliArgument.fontName: [String],
   CliArgument.namingStrategy: [String],
   CliArgument.symlinkMapFile: [String],
-  CliArgument.prefixFolder: [bool],
   CliArgument.normalize: [bool],
   CliArgument.ignoreShapes: [bool],
   CliArgument.recursive: [bool],
@@ -35,10 +33,11 @@ const _kArgAllowedTypes = <CliArgument, List<Type>>{
 const kDefaultVerbose = false;
 const kDefaultFormat = false;
 const kDefaultRecursive = false;
-const kDefaultPrefixFolder = false;
 
 const kOptionNames = EnumClass<CliArgument, String>({
-  // svgDir and fontFile are not options
+  // fontFile are not options
+  CliArgument.svgDir: 'input-svg-dir',
+  CliArgument.fontFile: 'output-font-file',
 
   CliArgument.classFile: 'output-class-file',
   CliArgument.className: 'class-name',
@@ -46,7 +45,6 @@ const kOptionNames = EnumClass<CliArgument, String>({
   CliArgument.format: 'format',
   CliArgument.namingStrategy: 'naming-strategy',
   CliArgument.symlinkMapFile: 'symlink-map-file',
-  CliArgument.prefixFolder: 'prefix-folder',
 
   CliArgument.fontName: 'font-name',
   CliArgument.normalize: 'normalize',
@@ -69,7 +67,6 @@ const kConfigKeys = EnumClass<CliArgument, String>({
   CliArgument.format: 'format',
   CliArgument.namingStrategy: 'naming_strategy',
   CliArgument.symlinkMapFile: 'symlink_map_file',
-  CliArgument.prefixFolder: 'prefix_folder',
 
   CliArgument.fontName: 'font_name',
   CliArgument.normalize: 'normalize',
@@ -98,7 +95,6 @@ enum CliArgument {
   format,
   namingStrategy,
   symlinkMapFile,
-  prefixFolder,
 
   // Font-related
   fontName,
@@ -125,7 +121,6 @@ class CliArguments {
     this.format,
     this.namingStrategy,
     this.symlinkMapFile,
-    this.prefixFolder,
     this.fontName,
     this.recursive,
     this.ignoreShapes,
@@ -142,7 +137,7 @@ class CliArguments {
   /// or if argument has wrong type.
   factory CliArguments.fromMap(Map<CliArgument, Object?> map) {
     return CliArguments(
-      map[CliArgument.svgDir] as Directory,
+      map[CliArgument.svgDir] as SourceDirectories,
       map[CliArgument.fontFile] as File,
       map[CliArgument.classFile] as File?,
       map[CliArgument.className] as String?,
@@ -150,7 +145,6 @@ class CliArguments {
       map[CliArgument.format] as bool?,
       NamingStrategy.fromString(map[CliArgument.namingStrategy] as String?),
       map[CliArgument.symlinkMapFile] as File?,
-      map[CliArgument.prefixFolder] as bool?,
       map[CliArgument.fontName] as String?,
       map[CliArgument.recursive] as bool?,
       map[CliArgument.ignoreShapes] as bool?,
@@ -160,7 +154,7 @@ class CliArguments {
     );
   }
 
-  final Directory svgDir;
+  final SourceDirectories svgDir;
   final File fontFile;
   final File? classFile;
   final String? className;
@@ -168,7 +162,6 @@ class CliArguments {
   final bool? format;
   final NamingStrategy? namingStrategy;
   final File? symlinkMapFile;
-  final bool? prefixFolder;
   final String? fontName;
   final bool? recursive;
   final bool? ignoreShapes;
@@ -195,13 +188,8 @@ Map<CliArgument, Object?> parseArguments(
     throw CliHelpException();
   }
 
-  final posArgsLength =
-      math.min(_kPositionalArguments.length, argResults.rest.length);
-
   final rawArgMap = <CliArgument, Object?>{
     for (final e in kOptionNames.entries) e.key: argResults[e.value] as Object?,
-    for (var i = 0; i < posArgsLength; i++)
-      _kPositionalArguments[i]: argResults.rest[i],
   };
 
   return rawArgMap;
@@ -298,7 +286,12 @@ extension CliArgumentMapExtension on Map<CliArgument, Object?> {
     // Validating types
     for (final e in _kArgAllowedTypes.entries) {
       final arg = e.key;
-      final argType = this[arg].runtimeType;
+      final Type argType;
+      if (this[arg] is YamlList) {
+        argType = List<String>;
+      } else {
+        argType = this[arg].runtimeType;
+      }
       final allowedTypes = e.value;
 
       if (argType != Null && !allowedTypes.contains(argType)) {
@@ -315,7 +308,7 @@ extension CliArgumentMapExtension on Map<CliArgument, Object?> {
   void _validateFormatted() {
     final args = this;
 
-    final svgDir = args[CliArgument.svgDir] as Directory?;
+    final svgDir = args[CliArgument.svgDir] as SourceDirectories?;
     final fontFile = args[CliArgument.fontFile] as File?;
     final symlinkMapFile = args[CliArgument.symlinkMapFile] as File?;
 
@@ -327,9 +320,11 @@ extension CliArgumentMapExtension on Map<CliArgument, Object?> {
       throw CliArgumentException('The output font file is not specified.');
     }
 
-    if (svgDir.statSync().type != FileSystemEntityType.directory) {
-      throw CliArgumentException(
-          "The input directory is not a directory or it doesn't exist.");
+    for (final dir in svgDir.sources) {
+      if (dir.statSync().type != FileSystemEntityType.directory) {
+        throw CliArgumentException(
+            "The input directory is not a directory or it doesn't exist.");
+      }
     }
 
     if (symlinkMapFile != null && !symlinkMapFile.path.endsWith('.json')) {

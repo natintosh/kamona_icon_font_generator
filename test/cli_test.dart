@@ -16,14 +16,6 @@ void main() {
           throwsA(const TypeMatcher<CliArgumentException>()));
     }
 
-    test('No positional args', () {
-      expectCliArgumentException([
-        '--output-class-file=test/a/df.dart',
-        '--class-name=MyIcons',
-        '--font-name=My Icons',
-      ]);
-    });
-
     test('Positional args validation', () {
       // dir doesn't exist
       expectCliArgumentException(['./asdasd/', 'asdasdasd']);
@@ -31,8 +23,8 @@ void main() {
 
     test('All arguments with non-defaults', () {
       const args = [
-        './',
-        'test/fonts/my_font.otf',
+        '--input-svg-dir=./',
+        '--output-font-file=test/fonts/my_font.otf',
         '--output-class-file=test/a/df.dart',
         '--class-name=MyIcons',
         '--font-name=My Icons',
@@ -46,8 +38,8 @@ void main() {
 
       final parsedArgs = parseArgsAndConfig(argParser, args);
 
-      expect(parsedArgs.svgDir.path, args.first);
-      expect(parsedArgs.fontFile.path, args[1]);
+      expect(parsedArgs.svgDir.sources.first.path, './');
+      expect(parsedArgs.fontFile.path, 'test/fonts/my_font.otf');
       expect(parsedArgs.classFile?.path, 'test/a/df.dart');
       expect(parsedArgs.className, 'MyIcons');
       expect(parsedArgs.fontName, 'My Icons');
@@ -61,16 +53,16 @@ void main() {
 
     test('All arguments with defaults', () {
       const args = [
-        './',
-        'test/fonts/my_font.otf',
+        '--input-svg-dir=./',
+        '--output-font-file=test/fonts/my_font.otf',
         '--normalize',
         '--ignore-shapes',
       ];
 
       final parsedArgs = parseArgsAndConfig(argParser, args);
 
-      expect(parsedArgs.svgDir.path, args.first);
-      expect(parsedArgs.fontFile.path, args[1]);
+      expect(parsedArgs.svgDir.sources.first.path, './');
+      expect(parsedArgs.fontFile.path, 'test/fonts/my_font.otf');
       expect(parsedArgs.classFile, isNull);
       expect(parsedArgs.className, isNull);
       expect(parsedArgs.fontName, isNull);
@@ -90,8 +82,8 @@ void main() {
 
       expectCliHelpException(['-h']);
       expectCliHelpException([
-        './',
-        'test/fonts/my_font.otf',
+        '--input-svg-dir=./',
+        '--output-font-file=test/fonts/my_font.otf',
         '--output-class-file=test/a/df.dart',
         '--class-name=MyIcons',
         '--font-name=My Icons',
@@ -125,7 +117,7 @@ void main() {
 
       final parsedArgs = parseArgsAndConfig(argParser, args);
 
-      expect(parsedArgs.svgDir.path, './');
+      expect(parsedArgs.svgDir.sources.first.path, './');
       expect(parsedArgs.fontFile.path, 'generated_font.otf');
       expect(parsedArgs.classFile?.path, 'lib/test_font.dart');
       expect(parsedArgs.className, 'MyIcons');
@@ -146,7 +138,7 @@ void main() {
 
       final parsedArgs = parseArgsAndConfig(argParser, args);
 
-      expect(parsedArgs.svgDir.path, './');
+      expect(parsedArgs.svgDir.sources.first.path, './');
       expect(parsedArgs.fontFile.path, 'generated_font.otf');
       expect(parsedArgs.classFile?.path, 'lib/test_font.dart');
       expect(parsedArgs.className, 'MyIcons');
@@ -199,7 +191,8 @@ icon_font:
     test('All arguments with non-defaults', () {
       final rawParsedArgs = parseConfig('''
 icon_font:
-  input_svg_dir: ./
+  input_svg_dir: 
+    - ./
   output_font_file: generated_font.otf
   
   output_class_file: lib/test_font.dart
@@ -215,7 +208,7 @@ icon_font:
       ''');
       final parsedArgs = rawParsedArgs;
 
-      expect(parsedArgs.svgDir.path, './');
+      expect(parsedArgs.svgDir.sources.first.path, './');
       expect(parsedArgs.fontFile.path, 'generated_font.otf');
       expect(parsedArgs.classFile?.path, 'lib/test_font.dart');
       expect(parsedArgs.className, 'MyIcons');
@@ -230,12 +223,13 @@ icon_font:
     test('All arguments with defaults', () {
       final rawParsedArgs = parseConfig('''
 icon_font:
-  input_svg_dir: ./
+  input_svg_dir: 
+    - ./
   output_font_file: generated_font.otf
       ''');
       final parsedArgs = rawParsedArgs;
 
-      expect(parsedArgs.svgDir.path, './');
+      expect(parsedArgs.svgDir.sources.first.path, './');
       expect(parsedArgs.fontFile.path, 'generated_font.otf');
       expect(parsedArgs.classFile, isNull);
       expect(parsedArgs.className, isNull);
@@ -250,49 +244,57 @@ icon_font:
     test('Type validation', () {
       expectCliArgumentException('''
 icon_font:
-  input_svg_dir: ./
+  input_svg_dir: 
+    - ./
   output_font_file: generated_font.otf
   output_class_file: 1
       ''');
       expectCliArgumentException('''
 icon_font:
-  input_svg_dir: ./
+  input_svg_dir: 
+    - ./
   output_font_file: generated_font.otf
   class_name: 1
       ''');
       expectCliArgumentException('''
 icon_font:
-  input_svg_dir: ./
+  input_svg_dir: 
+    - ./
   output_font_file: generated_font.otf
   font_name: 1
       ''');
       expectCliArgumentException('''
 icon_font:
-  input_svg_dir: ./
+  input_svg_dir: 
+    - ./
   output_font_file: generated_font.otf
   normalize: 1
       ''');
       expectCliArgumentException('''
 icon_font:
-  input_svg_dir: ./
+  input_svg_dir: 
+    - ./
   output_font_file: generated_font.otf
   ignore_shapes: 1
       ''');
       expectCliArgumentException('''
 icon_font:
-  input_svg_dir: ./
+  input_svg_dir: 
+    - ./
   output_font_file: generated_font.otf
   recursive: 1
       ''');
       expectCliArgumentException('''
 icon_font:
-  input_svg_dir: ./
+  input_svg_dir: 
+    - ./
   output_font_file: generated_font.otf
   verbose: 1
       ''');
       expectCliArgumentException('''
 icon_font:
-  input_svg_dir: ./
+  input_svg_dir: 
+    - ./
   output_font_file: generated_font.otf
   package: 1
       ''');

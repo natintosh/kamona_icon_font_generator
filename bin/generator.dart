@@ -9,6 +9,7 @@ import 'package:icon_font_generator/src/common/api.dart';
 import 'package:icon_font_generator/src/otf/io.dart';
 import 'package:icon_font_generator/src/utils/logger.dart';
 import 'package:path/path.dart' as p;
+import 'package:recase/recase.dart';
 import 'package:yaml/yaml.dart';
 
 final _argParser = ArgParser(allowTrailingOptions: true);
@@ -42,48 +43,58 @@ void main(List<String> args) {
 }
 
 void _run(CliArguments parsedArgs) {
-  final stopwatch = Stopwatch()..start();
+  final stopwatch = Stopwatch()
+    ..start();
 
   final isRecursive = parsedArgs.recursive ?? kDefaultRecursive;
   final isVerbose = parsedArgs.verbose ?? kDefaultVerbose;
-  final canPrefixFolder = parsedArgs.prefixFolder ?? kDefaultPrefixFolder;
 
   if (isVerbose) {
-    logger.setFilterLevel(Level.verbose);
+    logger.setFilterLevel(Level.trace);
   }
 
   final hasClassFile = parsedArgs.classFile != null;
   if (hasClassFile && !parsedArgs.classFile!.existsSync()) {
     parsedArgs.classFile!.createSync(recursive: true);
   } else if (hasClassFile) {
-    logger.v(
-        'Output file for a Flutter class already exists (${parsedArgs.classFile!.path}) - '
-        'overwriting it');
+    logger.t(
+        'Output file for a Flutter class already exists (${parsedArgs.classFile!
+            .path}) - '
+            'overwriting it');
   }
 
   if (!parsedArgs.fontFile.existsSync()) {
     parsedArgs.fontFile.createSync(recursive: true);
   } else {
-    logger.v(
-        'Output file for a font file already exists (${parsedArgs.fontFile.path}) - '
-        'overwriting it');
+    logger.t(
+        'Output file for a font file already exists (${parsedArgs.fontFile
+            .path}) - '
+            'overwriting it');
   }
 
-  final svgFileList = parsedArgs.svgDir
-      .listSync(recursive: isRecursive)
-      .where((e) => p.extension(e.path).toLowerCase() == '.svg')
-      .toList();
+  final nested = parsedArgs.svgDir.sources.length > 1;
+  final Map<String, List<FileSystemEntity>> svgFileMap = {};
 
-  if (svgFileList.isEmpty) {
+  for (final source in parsedArgs.svgDir.sources) {
+    final sourceName = p.basenameWithoutExtension(source.path);
+    final svgFiles = source
+        .listSync(recursive: isRecursive)
+        .where((e) => p.extension(e.path).toLowerCase() == '.svg')
+        .toList();
+    svgFileMap[sourceName] = svgFiles;
+  }
+
+  if (svgFileMap.isEmpty) {
     logger.w(
-        "The input directory doesn't contain any SVG file (${parsedArgs.svgDir.path}).");
+        "The input directory doesn't contain any SVG file (${parsedArgs.svgDir
+            .sources.fold('\n', (a, b) => '$a${b.path}\n')}).");
   }
 
   final symlinkMap = <String, String>{};
   final symlinkMapFile = parsedArgs.symlinkMapFile;
   if (symlinkMapFile != null) {
     final json =
-        jsonDecode(symlinkMapFile.readAsStringSync()) as Map<String, dynamic>;
+    jsonDecode(symlinkMapFile.readAsStringSync()) as Map<String, dynamic>;
 
     for (final jsonItem in json.entries) {
       symlinkMap.addAll({
@@ -92,54 +103,76 @@ void _run(CliArguments parsedArgs) {
     }
   }
 
-  String iconNameFromPath(String path) {
-    return p.basenameWithoutExtension(
-        path.replaceFirst(parsedArgs.svgDir.path, '').replaceAll('/', '_'));
-  }
+  String classString = '';
 
-  final svgMap = {
-    for (final f in svgFileList)
-      canPrefixFolder
-          ? iconNameFromPath(f.path)
-          : p.basenameWithoutExtension(f.path): File(f.path).readAsStringSync(),
-  };
+  for (final entry in svgFileMap.entries) {
+    final svgMap = {
+      for (final f in entry.value)
+        p.basenameWithoutExtension(f.path): File(f.path).readAsStringSync(),
+    };
 
-  final otfResult = svgToOtf(
-    svgMap: svgMap,
-    ignoreShapes: parsedArgs.ignoreShapes,
-    normalize: parsedArgs.normalize,
-    fontName: parsedArgs.fontName,
-  );
+    final fontName = nested
+        ? '${parsedArgs.fontName}_${entry.key}'.pascalCase
+        : parsedArgs.fontName;
 
-  writeToFile(parsedArgs.fontFile.path, otfResult.font);
-
-  if (parsedArgs.classFile == null) {
-    logger.v('No output path for Flutter class was specified - '
-        'skipping class generation.');
-  } else {
-    final fontFileName = p.basename(parsedArgs.fontFile.path);
-
-    var classString = generateFlutterClass(
-      glyphList: otfResult.glyphList,
-      className: parsedArgs.className,
-      familyName: otfResult.font.familyName,
-      fontFileName: fontFileName,
-      namingStrategy: parsedArgs.namingStrategy,
-      symlinkMap: symlinkMap,
-      package: parsedArgs.fontPackage,
+    final otfResult = svgToOtf(
+      svgMap: svgMap,
+      ignoreShapes: parsedArgs.ignoreShapes,
+      normalize: parsedArgs.normalize,
+      fontName: fontName,
     );
 
-    if (parsedArgs.format ?? kDefaultFormat) {
-      try {
-        logger.v('Formatting Flutter class generation.');
-        classString = formatter.format(classString);
-      } on Object catch (e) {
-        logger.e(e.toString());
+    final fileName = (p.basenameWithoutExtension(parsedArgs.fontFile.path) + entry.key).snakeCase +
+            p.extension(parsedArgs.fontFile.path);
+
+    final fontFilePath = nested
+        ? p.join(p.dirname(parsedArgs.fontFile.path), fileName)
+        : parsedArgs.fontFile.path;
+
+    writeToFile(fontFilePath, otfResult.font);
+
+    if (parsedArgs.classFile == null) {
+      logger.t('No output path for Flutter class was specified - '
+          'skipping class generation.');
+    } else {
+      final fontFileName = p.basename(fontFilePath);
+
+      final className = nested
+          ? '${parsedArgs.className}_${entry.key}'.camelCase
+          : parsedArgs.className;
+
+      classString += generateFlutterClass(
+        glyphList: otfResult.glyphList,
+        className: className,
+        familyName: otfResult.font.familyName,
+        fontFileName: fontFileName,
+        namingStrategy: parsedArgs.namingStrategy,
+        symlinkMap: symlinkMap,
+        package: parsedArgs.fontPackage,
+        nested: nested,
+      );
+
+      classString += '\n';
+
+      if (parsedArgs.format ?? kDefaultFormat) {
+        try {
+          logger.t('Formatting Flutter class generation.');
+          classString = formatter.format(classString);
+        } on Object catch (e) {
+          logger.e(e.toString());
+        }
       }
     }
-
-    parsedArgs.classFile!.writeAsStringSync(classString);
   }
+
+  if (nested) {
+    classString = '${generateWrapperFlutterClass(
+      className: parsedArgs.className,
+      subClasses: svgFileMap.keys.toList(),
+    )}\n $classString';
+  }
+
+  parsedArgs.classFile!.writeAsStringSync(classString);
 
   logger.i('Generated in ${stopwatch.elapsedMilliseconds}ms');
 }

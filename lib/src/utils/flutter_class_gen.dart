@@ -8,14 +8,27 @@ import '../otf/defaults.dart';
 
 const _kUnnamedIconName = 'unnamed';
 const _kDefaultIndent = 2;
-const _kDefaultClassName = 'UiIcons';
+const kDefaultClassName = 'UiIcons';
 const _kDefaultFontFileName = 'icon_font_generator_icons.otf';
 const _kDefaultNamingStrategy = NamingStrategy.camel;
+
+String classHeader() {
+  return '''
+// Generated code: do not hand-edit.
+
+// Generated using $kVendorName.
+// Copyright © ${DateTime.now().year} $kVendorName ($kVendorUrl).
+
+// ignore_for_file: constant_identifier_names
+
+import 'package:flutter/widgets.dart';
+''';
+}
 
 /// Removes any characters that are not valid for variable name.
 ///
 /// Returns a new string.
-String _getVarName(String string) {
+String getVarName(String string) {
   final replaced = string.replaceAll(RegExp(r'[^a-zA-Z0-9_\-$]'), '');
   return RegExp(r'^[a-zA-Z$].*').firstMatch(replaced)?.group(0) ?? '';
 }
@@ -46,7 +59,8 @@ class FlutterClassGenerator {
     NamingStrategy? namingStrategy,
     Map<String, String>? symlinkMap,
     String? package,
-  })  : _className = _getVarName(className ?? _kDefaultClassName),
+    this.nested = false,
+  })  : _className = getVarName(className ?? kDefaultClassName),
         _familyName = familyName ?? kDefaultFontFamily,
         _fontFileName = fontFileName ?? _kDefaultFontFileName,
         _indent = ' ' * (indent ?? _kDefaultIndent),
@@ -62,13 +76,14 @@ class FlutterClassGenerator {
   final NamingStrategy _namingStrategy;
   final Map<String, String>? _symlinkMap;
   final String? _package;
+  final bool nested;
 
   Map<String, GenericGlyph> _generateIconMap() {
     final iconMap = <String, GenericGlyph>{};
 
     for (final glyph in glyphList) {
       final baseName = _fixNamingStrategy(
-        _getVarName(glyph.metadata.name!),
+        getVarName(glyph.metadata.name!),
         _namingStrategy,
       );
       final usingDefaultName = baseName.isEmpty;
@@ -140,7 +155,7 @@ class FlutterClassGenerator {
   bool get _hasPackage => _package != null;
 
   String get _fontFamilyConst =>
-      "static const iconFontFamily = '$_familyName';";
+      "${nested ? 'final' : 'static const'} iconFontFamily = '$_familyName';";
 
   String get _fontPackageConst => "static const iconFontPackage = '$_package';";
 
@@ -165,13 +180,13 @@ class FlutterClassGenerator {
         '///',
         "/// <image width='32px' src='data:image/svg+xml;base64,${glyphMeta.preview}'>",
       ],
-      'static const $varName = IconData(0x$hexCode, $posParamString);'
+      '${nested ? 'final' : 'static const'} $varName = IconData(0x$hexCode, $posParamString);'
     ];
   }
 
   List<String> _generateAllIconsMap(List<String> iconVarNames) {
     return [
-      'static const all = {',
+      '${nested ? 'final' : 'static const'} all = {',
       for (final iconName in iconVarNames) "$_indent'$iconName': $iconName,",
       '};'
     ];
@@ -208,14 +223,8 @@ class FlutterClassGenerator {
     final classContentString =
         classContent.map((e) => e.isEmpty ? '' : '$_indent$e').join('\n');
 
-    return '''// Generated code: do not hand-edit.
-
-// Generated using $kVendorName.
-// Copyright © ${DateTime.now().year} $kVendorName ($kVendorUrl).
-
-// ignore_for_file: constant_identifier_names
-
-import 'package:flutter/widgets.dart';
+    return '''
+${nested ? '' : classHeader()}
 
 /// Identifiers for the icons.
 ///
@@ -235,8 +244,8 @@ import 'package:flutter/widgets.dart';
 ///       fonts:
 ///         - asset: fonts/$_fontFileName
 /// ```
-@staticIconProvider
-abstract final class $_className {
+${nested ? '' : '@staticIconProvider'}
+${nested ? '' : 'abstract final'} class $_className {
 $classContentString
 }
 ''';

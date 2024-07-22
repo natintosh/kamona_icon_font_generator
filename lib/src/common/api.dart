@@ -1,3 +1,5 @@
+import 'package:recase/recase.dart';
+
 import '../otf.dart';
 import '../svg.dart';
 import '../utils/flutter_class_gen.dart';
@@ -86,6 +88,7 @@ String generateFlutterClass({
   Map<String, String>? symlinkMap,
   int? indent,
   String? package,
+  bool nested = false,
 }) {
   final generator = FlutterClassGenerator(
     glyphList,
@@ -96,7 +99,24 @@ String generateFlutterClass({
     namingStrategy: namingStrategy,
     symlinkMap: symlinkMap,
     package: package,
+    nested: nested,
   );
 
   return generator.generate();
+}
+
+String generateWrapperFlutterClass({
+  String? className,
+  List<String> subClasses = const [],
+}) {
+  return '''
+${classHeader()}
+
+abstract final class ${getVarName(className ?? kDefaultClassName)} {
+  ${subClasses.map((e) {
+    final childClassName = '${className ?? ''}_$e'.camelCase;
+    return 'static const ${e.camelCase} = $childClassName._();';
+  }).join('\n')}
+}
+''';
 }

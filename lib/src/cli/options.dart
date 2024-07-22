@@ -5,6 +5,18 @@ import 'arguments.dart';
 void defineOptions(ArgParser argParser) {
   argParser
     ..addSeparator('Flutter class options:')
+    ..addMultiOption(
+      kOptionNames[CliArgument.svgDir]!,
+      abbr: 's',
+      help: 'Paths to a directory with SVG files.',
+      valueHelp: 'source',
+    )
+    ..addOption(
+      kOptionNames[CliArgument.fontFile]!,
+      abbr: 'd',
+      help: 'Path to outputted font file.',
+      valueHelp: 'destination'
+    )
     ..addOption(
       kOptionNames[CliArgument.classFile]!,
       abbr: 'o',
@@ -39,11 +51,6 @@ void defineOptions(ArgParser argParser) {
       kOptionNames[CliArgument.symlinkMapFile]!,
       help: 'Symlinks json map, with this pattern: symlink -> target.',
       valueHelp: 'path',
-    )
-    ..addFlag(
-      kOptionNames[CliArgument.prefixFolder]!,
-      help: 'Prefix nested folder name with the icons name.',
-      defaultsTo: kDefaultPrefixFolder,
     )
     ..addSeparator('Font options:')
     ..addOption(

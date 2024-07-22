@@ -2,7 +2,8 @@ name: test
 version: 1.0
 
 icon_font:
-  input_svg_dir: ./
+  input_svg_dir:
+    - ./
   output_font_file: generated_font.otf
   
   output_class_file: lib/test_font.dart
